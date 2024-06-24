@@ -824,10 +824,10 @@ namespace Cpu {
 			out += Theme::g("cpu").at(clamp(safeVal(cpu.core_percent, n).back(), 0ll, 100ll));
 			out += rjust(to_string(safeVal(cpu.core_percent, n).back()), (b_column_size < 2 ? 3 : 4)) + Theme::c("main_fg") + '%';
 
-			if (show_temps and not hide_cores and std::cmp_greater_equal(temp_graphs.size(), n)) {
+			if (show_temps and not hide_cores) {
 				const auto [temp, unit] = celsius_to(safeVal(cpu.temp, n+1).back(), temp_scale);
 				const auto& temp_color = Theme::g("temp").at(clamp(safeVal(cpu.temp, n+1).back() * 100 / cpu.temp_max, 0ll, 100ll));
-				if (b_column_size > 1)
+				if (b_column_size > 1 and std::cmp_greater_equal(temp_graphs.size(), n))
 					out += ' ' + Theme::c("inactive_fg") + graph_bg * 5 + Mv::l(5)
 						+ temp_graphs.at(n+1)(safeVal(cpu.temp, n+1), data_same or redraw);
 				out += temp_color + rjust(to_string(temp), 4) + Theme::c("main_fg") + unit;
@@ -1162,7 +1162,7 @@ namespace Mem {
 						if (not Config::getS("io_graph_speeds").empty()) {
 							auto split = ssplit(Config::getS("io_graph_speeds"));
 							for (const auto& entry : split) {
-								auto vals = ssplit(entry);
+								auto vals = ssplit(entry, ':');
 								if (vals.size() == 2 and mem.disks.contains(vals.at(0)) and isint(vals.at(1)))
 									try {
 										custom_speeds[vals.at(0)] = std::stoi(vals.at(1));
@@ -1184,8 +1184,7 @@ namespace Mem {
 								deque<long long> combined(disk.io_read.size(), 0);
 								rng::transform(disk.io_read, disk.io_write, combined.begin(), std::plus<long long>());
 								io_graphs[name] = Draw::Graph{
-									disks_width - (io_mode ? 0 : 6),
-									disks_io_h, "available", combined,
+									disks_width, disks_io_h, "available", combined,
 									graph_symbol, false, true, speed};
 							}
 							else {
@@ -1290,8 +1289,8 @@ namespace Mem {
 						+ Mv::l(disks_width - 6) + io_graphs.at(mount + "_activity")(disk.io_activity, redraw or data_same) + Theme::c("main_fg");
 					}
 					if (++cy > height - 3) break;
-					if (not io_graphs.contains(mount)) continue;
 					if (io_graph_combined) {
+						if (not io_graphs.contains(mount)) continue;
 						auto comb_val = disk.io_read.back() + disk.io_write.back();
 						const string humanized = (disk.io_write.back() > 0 ? "▼"s : ""s) + (disk.io_read.back() > 0 ? "▲"s : ""s)
 												+ (comb_val > 0 ? Mv::r(1) + floating_humanizer(comb_val, true) : "RW");
@@ -1301,6 +1300,7 @@ namespace Mem {
 						cy += disks_io_h;
 					}
 					else {
+						if (not io_graphs.contains(mount + "_read") or not io_graphs.contains(mount + "_write")) continue;
 						const string human_read = (disk.io_read.back() > 0 ? "▲" + floating_humanizer(disk.io_read.back(), true) : "R");
 						const string human_write = (disk.io_write.back() > 0 ? "▼" + floating_humanizer(disk.io_write.back(), true) : "W");
 						if (disks_io_h <= 3) out += Mv::to(y+1+cy, x+1+cx) + string(5, ' ') + Mv::to(y+cy + disks_io_h, x+1+cx) + string(5, ' ');
