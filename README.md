@@ -46,6 +46,16 @@
 
 ## News
 
+##### 22 September 2024
+
+Btop release v1.4.0
+
+Intel GPU support added, note that only GPU utilization, power usage and clock speed available to monitor. Thanks to [@bjia56](https://github.com/bjia56) for contributions.
+
+NetBSD support added. Thanks to [@fraggerfox](https://github.com/fraggerfox) for contributions.
+
+See [CHANGELOG.md](CHANGELOG.md) and latest [release](https://github.com/aristocratos/btop/releases/latest) for detailed list of new features, bug fixes and new themes.
+
 ##### 7 January 2024
 
 Btop release v1.3.0
@@ -225,7 +235,7 @@ Also needs a UTF8 locale and a font that covers:
 * Unicode Block “Geometric Shapes” U+25A0 - U+25FF
 * Unicode Block "Box Drawing" and "Block Elements" U+2500 - U+259F
 
-### **Optional Dependencies (Needed for GPU monitoring)**
+### **Optional Dependencies (Needed for GPU monitoring) (Only Linux)**
 
 GPU monitoring also requires a btop binary built with GPU support (`GPU_SUPPORT=true` flag).
 
@@ -240,6 +250,14 @@ In addition to that you must also have the nvidia-ml dynamic library installed, 
  * **AMD**
 
 If you have an AMD GPU `rocm_smi_lib` is required, which may or may not be packaged for your distribution.
+
+ * **INTEL**
+
+Requires a working C compiler if compiling from source - tested with GCC12 and Clang16.
+
+Also requires the user to have permission to read from SYSFS.
+
+Can be set with `make setcap` (preferred) or `make setuid` or by running btop with `sudo` or equivalent.
 
 ### **Notice (Text rendering issues)**
 
@@ -291,7 +309,7 @@ If you have an AMD GPU `rocm_smi_lib` is required, which may or may not be packa
 
 2. **Install (from created folder)**
 
-   * **Run install.sh or:**
+   * **Run:**
 
    ```bash
    # use "make install PREFIX=/target/dir" to set target, default: /usr/local
@@ -299,11 +317,19 @@ If you have an AMD GPU `rocm_smi_lib` is required, which may or may not be packa
    sudo make install
    ```
 
-3. **(Optional) Set suid bit to make btop always run as root (or other user)**
+3. **(Optional/Required for Intel GPU) Set extended capabilities or suid bit to btop**
 
    Enables signal sending to any process without starting with `sudo` and can prevent /proc read permissions problems on some systems.
 
-   * **Run setuid.sh or:**
+   Is required for Intel GPU support.
+
+   * **Run:**
+
+   ```bash
+   # run after make install and use same PREFIX if any was used at install
+   sudo make setcap
+   ```
+   * **or**
 
    ```bash
    # run after make install and use same PREFIX if any was used at install
@@ -313,7 +339,7 @@ If you have an AMD GPU `rocm_smi_lib` is required, which may or may not be packa
 
 * **Uninstall**
 
-  * **Run uninstall.sh or:**
+  * **Run:**
 
    ```bash
    sudo make uninstall
@@ -367,11 +393,9 @@ If you have an AMD GPU `rocm_smi_lib` is required, which may or may not be packa
 
    ### GPU compatibility
 
-   Btop++ supports NVIDIA and AMD GPUs out of the box on Linux x86_64, provided you have the correct drivers and libraries.
+   Btop++ supports Nvidia and AMD GPUs and Intel IGPUs out of the box on Linux x86_64, provided you have the correct drivers and libraries.
 
-   Compatibility with Intel GPUs using generic DRM calls is planned, as is compatibility for FreeBSD and macOS.
-
-   Gpu support will not work when static linking glibc (or musl, etc.)!
+   Gpu support for Nvidia or AMD will not work when static linking glibc (or musl, etc.)!
 
    For x86_64 Linux the flag `GPU_SUPPORT` is automatically set to `true`, to manually disable gpu support set the flag to false, like:
 
@@ -448,17 +472,25 @@ If you have an AMD GPU `rocm_smi_lib` is required, which may or may not be packa
 
    Notice! Only use "sudo" when installing to a NON user owned directory.
 
-5. **(Optional) Set suid bit to make btop always run as root (or other user)**
+5. **(Optional/Required for Intel GPU support) Set extended capabilities or suid bit to btop**
+
+   No need for `sudo` to enable signal sending to any process and to prevent /proc read permissions problems on some systems.
+
+   Also required for Intel GPU monitoring.
+
+   Run after make install and use same PREFIX if any was used at install.
+
+   ```bash
+   sudo make setcap
+   ```
+
+   or
+
+   Set `SU_USER` and `SU_GROUP` to select user and group, default is `root` and `root`
 
    ```bash
    sudo make setuid
    ```
-
-   No need for `sudo` to enable signal sending to any process and to prevent /proc read permissions problems on some systems.
-
-   Run after make install and use same PREFIX if any was used at install.
-
-   Set `SU_USER` and `SU_GROUP` to select user and group, default is `root` and `root`
 
 * **Uninstall**
 
